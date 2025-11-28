@@ -12,10 +12,8 @@ class BaghChal:
         self.winner = None # 'G', 'T', or None
         
         # Initialize Tigers at the four corners
-        self.board[0][0] = -1
-        self.board[0][4] = -1
-        self.board[4][0] = -1
-        self.board[4][4] = -1
+        for r, c in [(0,0),(0,4),(4,0),(4,4)]:
+            self.board[r][c] = -1
 
     def get_valid_moves(self, r, c, check_turn=True):
         """
@@ -27,6 +25,8 @@ class BaghChal:
             return []
 
         piece = self.board[r][c]
+        if piece == 0:
+            return[]
         moves = []
 
         # If it's Goat's turn but we are still in PLACEMENT phase, 

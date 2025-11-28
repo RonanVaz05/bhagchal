@@ -133,8 +133,9 @@ class BaghChal:
         if self.goats_placed == 20:
             self.phase = 'MOVEMENT'
             
-        self.check_win_condition()
         self.switch_turn()
+        self.check_win_condition()
+        
         return True
 
     def switch_turn(self):

@@ -88,7 +88,7 @@ class BaghChal:
 
         # Validate move is in allowed list
         valid_moves = self.get_valid_moves(r1, c1)
-        if (r2, c2) not in valid_moves:
+        if end_pos not in valid_moves:
             return False
 
         piece = self.board[r1][c1]
@@ -107,11 +107,11 @@ class BaghChal:
                 self.board[mr][mc] = 0 # Remove Goat
                 self.goats_captured += 1
                 captured = True
-
-        self.check_win_condition()
         
         # Switch Turn
         self.switch_turn()
+        self.check_win_condition()
+        
         return True
 
     def place_goat(self, r, c):

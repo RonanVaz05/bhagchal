@@ -47,6 +47,6 @@ Movement is restricted according to the Bagh-Chal board graph:
 
 ```bash
 git clone https://github.com/RonanVaz05/bhagchal
-cd baghchal
+cd bhagchal
 pip install pygame
 python main.py

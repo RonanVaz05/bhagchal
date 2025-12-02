@@ -1,6 +1,7 @@
 import pygame
 import sys
 from game_logic import BaghChal
+from tiger_bot import TigerBot
 
 # --- Constants ---
 SCREEN_WIDTH = 600
@@ -26,12 +27,21 @@ class BaghChalUI:
         pygame.display.set_caption("Baghchal - Tiger and Goat Game")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont('Arial', 24)
+        self.title_font = pygame.font.SysFont('Arial', 40, bold=True)
         
         self.game = BaghChal()
+        self.bot = TigerBot(depth=3)
         
         # UI State
+        self.state = 'MENU' # 'MENU' or 'GAME'
+        self.game_mode = None # 'PvP' or 'PvAI'
+        
         self.selected_pos = None # (r, c) of selected piece
         self.valid_moves_cache = [] # List of valid moves for selected piece
+
+        # Menu Buttons
+        self.btn_pvp = pygame.Rect(150, 250, 300, 60)
+        self.btn_pvai = pygame.Rect(150, 350, 300, 60)
 
     def run(self):
         running = True
@@ -41,15 +51,41 @@ class BaghChalUI:
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handle_click(event.pos)
+                    if self.state == 'MENU':
+                        self.handle_menu_click(event.pos)
+                    elif self.state == 'GAME':
+                        # Only handle clicks if it's NOT the AI's turn (in PvAI mode)
+                        if self.game_mode == 'PvAI' and self.game.turn == 'T':
+                            pass
+                        else:
+                            self.handle_click(event.pos)
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r: # Reset
+                    if event.key == pygame.K_r and self.state == 'GAME': # Reset
                         self.game = BaghChal()
                         self.selected_pos = None
                         self.valid_moves_cache = []
+                    elif event.key == pygame.K_m: # Return to Menu
+                        self.state = 'MENU'
+                        self.game = BaghChal()
 
-            # 2. Drawing
-            self.draw()
+            # 2. Game Logic
+            if self.state == 'GAME':
+                # AI Turn Logic
+                if self.game_mode == 'PvAI' and self.game.turn == 'T' and not self.game.winner:
+                    # Small delay for better UX
+                    pygame.time.wait(500)
+                    
+                    # Get AI Move
+                    move = self.bot.get_best_move(self.game)
+                    if move:
+                        start, end = move
+                        self.game.make_move(start, end)
+                        print(f"Tiger AI moved from {start} to {end}")
+
+                self.draw()
+            
+            elif self.state == 'MENU':
+                self.draw_menu()
             
             # 3. Update Display
             pygame.display.flip()
@@ -57,6 +93,42 @@ class BaghChalUI:
 
         pygame.quit()
         sys.exit()
+
+    def handle_menu_click(self, pos):
+        if self.btn_pvp.collidepoint(pos):
+            self.state = 'GAME'
+            self.game_mode = 'PvP'
+            self.game = BaghChal() # Reset game
+            print("Starting PvP Game")
+        elif self.btn_pvai.collidepoint(pos):
+            self.state = 'GAME'
+            self.game_mode = 'PvAI'
+            self.game = BaghChal() # Reset game
+            print("Starting PvAI Game")
+
+    def draw_menu(self):
+        self.screen.fill(CREAM)
+        
+        # Title
+        title = self.title_font.render("Bagh Chal", True, BLACK)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        self.screen.blit(title, title_rect)
+        
+        # Buttons
+        pygame.draw.rect(self.screen, GREEN, self.btn_pvp, border_radius=10)
+        pygame.draw.rect(self.screen, RED, self.btn_pvai, border_radius=10)
+        pygame.draw.rect(self.screen, BLACK, self.btn_pvp, 2, border_radius=10)
+        pygame.draw.rect(self.screen, BLACK, self.btn_pvai, 2, border_radius=10)
+        
+        # Button Text
+        t1 = self.font.render("Player vs Player", True, WHITE)
+        t2 = self.font.render("Player vs Bot (Tiger)", True, WHITE)
+        
+        r1 = t1.get_rect(center=self.btn_pvp.center)
+        r2 = t2.get_rect(center=self.btn_pvai.center)
+        
+        self.screen.blit(t1, r1)
+        self.screen.blit(t2, r2)
 
     def handle_click(self, pos):
         """
@@ -183,6 +255,7 @@ class BaghChalUI:
         turn_text = f"Turn: {'Goat (Green)' if self.game.turn == 'G' else 'Tiger (Red)'}"
         phase_text = f"Phase: {self.game.phase}"
         goats_info = f"Goats Placed: {self.game.goats_placed}/20 | Captured: {self.game.goats_captured}/5"
+        mode_text = f"Mode: {self.game_mode}"
         
         color = BLACK
         if self.game.winner:
@@ -192,13 +265,15 @@ class BaghChalUI:
         t1 = self.font.render(turn_text, True, color)
         t2 = self.font.render(phase_text, True, BLACK)
         t3 = self.font.render(goats_info, True, BLACK)
+        t4 = self.font.render(mode_text, True, BLUE)
         
         self.screen.blit(t1, (MARGIN, y_offset))
         self.screen.blit(t2, (MARGIN, y_offset + 30))
         self.screen.blit(t3, (MARGIN, y_offset + 60))
+        self.screen.blit(t4, (MARGIN + 300, y_offset + 60)) # Mode on right
 
         if self.game.winner:
-            restart_text = self.font.render("Press 'R' to Restart", True, BLUE)
+            restart_text = self.font.render("Press 'R' to Restart | 'M' for Menu", True, BLUE)
             self.screen.blit(restart_text, (MARGIN, y_offset + 90))
 
 if __name__ == "__main__":
